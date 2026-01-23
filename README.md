@@ -56,9 +56,11 @@ You're going to need devkitA64 and the following libraries:
 After you've obtained all the dependencies and ensured devkitA64 is properly installed and the `DEVKITPRO` environment variable is set,
 build this repository using the commands:
 ```
-git clone https://github.com/fgsfdsfgs/max_nx.git && cd max_nx
-source $DEVKITPRO/switchvars.sh
-make
+docker pull devkitpro/devkitarm
+```
+
+```
+bash bash_rub.sh 
 ```
 
 ### Credits
