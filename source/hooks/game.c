@@ -20,7 +20,7 @@
 #include "../so_util.h"
 #include "../hooks.h"
 
-#define APK_PATH "main.obb"
+#define APK_PATH "main.obb"  // TODO: Update for Bully OBB path if different
 
 extern uintptr_t __cxa_guard_acquire;
 extern uintptr_t __cxa_guard_release;
@@ -34,11 +34,8 @@ static PadState pad;
 
 static uint8_t fake_tls[0x100];
 
-// control binding array
-typedef struct {
-  int unk[14];
-} MaxPayne_InputControl;
-static MaxPayne_InputControl *sm_control = NULL; // [32]
+// Removed MaxPayne-specific input control structures
+// Bully uses different input system (JNI-based or LIB_Input functions)
 
 int NvAPKOpen(const char *path) {
   // debugPrintf("NvAPKOpen: %s\n", path);
@@ -232,19 +229,8 @@ float WarGamepad_GetGamepadAxis(int padnum, int axis) {
   return 0.0f;
 }
 
-static int (* MaxPayne_InputControl_getButton)(MaxPayne_InputControl *, int);
-
-int MaxPayne_ConfiguredInput_readCrouch(void *this) {
-  static int prev = 0;
-  static int latch = 0;
-  // crouch is control #5
-  const int new = MaxPayne_InputControl_getButton(&sm_control[5], 0);
-  if (prev != new) {
-    prev = new;
-    if (new) latch = !latch;
-  }
-  return latch;
-}
+// Removed MaxPayne-specific crouch toggle
+// Bully may use different input system - adapt if needed
 
 int GetAndroidCurrentLanguage(void) {
   // this will be loaded from config.txt; cap it
@@ -300,81 +286,135 @@ void patch_game(void) {
   padInitializeAny(&pad);
 
   // make it crash in an obvious location when it calls JNI methods
-  hook_arm64(so_find_addr("_Z24NVThreadGetCurrentJNIEnvv"), (uintptr_t)0x1337);
+  if (so_find_addr("_Z24NVThreadGetCurrentJNIEnvv") != 0)
+    hook_arm64(so_find_addr("_Z24NVThreadGetCurrentJNIEnvv"), (uintptr_t)0x1337);
 
-  hook_arm64(so_find_addr("__cxa_throw"), (uintptr_t)&__cxa_throw);
-  hook_arm64(so_find_addr("__cxa_guard_acquire"), (uintptr_t)&__cxa_guard_acquire);
-  hook_arm64(so_find_addr("__cxa_guard_release"), (uintptr_t)&__cxa_guard_release);
+  // C++ exception handling hooks (should exist in most C++ code)
+  if (so_find_addr("__cxa_throw") != 0)
+    hook_arm64(so_find_addr("__cxa_throw"), (uintptr_t)&__cxa_throw);
+  if (so_find_addr("__cxa_guard_acquire") != 0)
+    hook_arm64(so_find_addr("__cxa_guard_acquire"), (uintptr_t)&__cxa_guard_acquire);
+  if (so_find_addr("__cxa_guard_release") != 0)
+    hook_arm64(so_find_addr("__cxa_guard_release"), (uintptr_t)&__cxa_guard_release);
 
-  hook_arm64(so_find_addr("_Z15OS_ThreadLaunchPFjPvES_jPKci16OSThreadPriority"), (uintptr_t)OS_ThreadLaunch);
+  // Thread launch hook
+  if (so_find_addr("_Z15OS_ThreadLaunchPFjPvES_jPKci16OSThreadPriority") != 0)
+    hook_arm64(so_find_addr("_Z15OS_ThreadLaunchPFjPvES_jPKci16OSThreadPriority"), (uintptr_t)OS_ThreadLaunch);
 
-  // used to check some flags
-  hook_arm64(so_find_addr("_Z20OS_ServiceAppCommandPKcS0_"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z23OS_ServiceAppCommandIntPKci"), (uintptr_t)ret0);
+  // used to check some flags (hook only if they exist)
+  if (so_find_addr("_Z20OS_ServiceAppCommandPKcS0_") != 0)
+    hook_arm64(so_find_addr("_Z20OS_ServiceAppCommandPKcS0_"), (uintptr_t)ret0);
+  if (so_find_addr("_Z23OS_ServiceAppCommandIntPKci") != 0)
+    hook_arm64(so_find_addr("_Z23OS_ServiceAppCommandIntPKci"), (uintptr_t)ret0);
   // this is checked on startup
-  hook_arm64(so_find_addr("_Z25OS_ServiceIsWifiAvailablev"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z28OS_ServiceIsNetworkAvailablev"), (uintptr_t)ret0);
+  if (so_find_addr("_Z25OS_ServiceIsWifiAvailablev") != 0)
+    hook_arm64(so_find_addr("_Z25OS_ServiceIsWifiAvailablev"), (uintptr_t)ret0);
+  if (so_find_addr("_Z28OS_ServiceIsNetworkAvailablev") != 0)
+    hook_arm64(so_find_addr("_Z28OS_ServiceIsNetworkAvailablev"), (uintptr_t)ret0);
   // don't bother opening links
-  hook_arm64(so_find_addr("_Z18OS_ServiceOpenLinkPKc"), (uintptr_t)ret0);
+  if (so_find_addr("_Z18OS_ServiceOpenLinkPKc") != 0)
+    hook_arm64(so_find_addr("_Z18OS_ServiceOpenLinkPKc"), (uintptr_t)ret0);
 
-  // don't have movie playback yet
-  hook_arm64(so_find_addr("_Z12OS_MoviePlayPKcbbf"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z12OS_MovieStopv"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z20OS_MovieSetSkippableb"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z17OS_MovieTextScalei"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z17OS_MovieIsPlayingPi"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z20OS_MoviePlayinWindowPKciiiibbf"), (uintptr_t)ret0);
+  // don't have movie playback yet (hook only if they exist)
+  if (so_find_addr("_Z12OS_MoviePlayPKcbbf") != 0)
+    hook_arm64(so_find_addr("_Z12OS_MoviePlayPKcbbf"), (uintptr_t)ret0);
+  if (so_find_addr("_Z12OS_MovieStopv") != 0)
+    hook_arm64(so_find_addr("_Z12OS_MovieStopv"), (uintptr_t)ret0);
+  if (so_find_addr("_Z20OS_MovieSetSkippableb") != 0)
+    hook_arm64(so_find_addr("_Z20OS_MovieSetSkippableb"), (uintptr_t)ret0);
+  if (so_find_addr("_Z17OS_MovieTextScalei") != 0)
+    hook_arm64(so_find_addr("_Z17OS_MovieTextScalei"), (uintptr_t)ret0);
+  if (so_find_addr("_Z17OS_MovieIsPlayingPi") != 0)
+    hook_arm64(so_find_addr("_Z17OS_MovieIsPlayingPi"), (uintptr_t)ret0);
+  if (so_find_addr("_Z20OS_MoviePlayinWindowPKciiiibbf") != 0)
+    hook_arm64(so_find_addr("_Z20OS_MoviePlayinWindowPKciiiibbf"), (uintptr_t)ret0);
 
-  hook_arm64(so_find_addr("_Z17OS_ScreenGetWidthv"), (uintptr_t)OS_ScreenGetWidth);
-  hook_arm64(so_find_addr("_Z18OS_ScreenGetHeightv"), (uintptr_t)OS_ScreenGetHeight);
+  // Hook screen size functions for Bully
+  // Try OS_ functions first (same as Max Payne)
+  if (so_find_addr("_Z17OS_ScreenGetWidthv") != 0)
+    hook_arm64(so_find_addr("_Z17OS_ScreenGetWidthv"), (uintptr_t)OS_ScreenGetWidth);
+  if (so_find_addr("_Z18OS_ScreenGetHeightv") != 0)
+    hook_arm64(so_find_addr("_Z18OS_ScreenGetHeightv"), (uintptr_t)OS_ScreenGetHeight);
+  // Also try GetScreen functions if they exist
+  if (so_find_addr("_Z14GetScreenWidthv") != 0)
+    hook_arm64(so_find_addr("_Z14GetScreenWidthv"), (uintptr_t)OS_ScreenGetWidth);
+  if (so_find_addr("_Z15GetScreenHeightv") != 0)
+    hook_arm64(so_find_addr("_Z15GetScreenHeightv"), (uintptr_t)OS_ScreenGetHeight);
 
-  hook_arm64(so_find_addr("_Z9NvAPKOpenPKc"), (uintptr_t)ret0);
+  if (so_find_addr("_Z9NvAPKOpenPKc") != 0)
+    hook_arm64(so_find_addr("_Z9NvAPKOpenPKc"), (uintptr_t)ret0);
 
   // TODO: implement touch here
-  hook_arm64(so_find_addr("_Z13ProcessEventsb"), (uintptr_t)ProcessEvents);
+  if (so_find_addr("_Z13ProcessEventsb") != 0)
+    hook_arm64(so_find_addr("_Z13ProcessEventsb"), (uintptr_t)ProcessEvents);
 
   // both set and get are called, remember the language that it sets
-  hook_arm64(so_find_addr("_Z25GetAndroidCurrentLanguagev"), (uintptr_t)GetAndroidCurrentLanguage);
-  hook_arm64(so_find_addr("_Z25SetAndroidCurrentLanguagei"), (uintptr_t)SetAndroidCurrentLanguage);
+  if (so_find_addr("_Z25GetAndroidCurrentLanguagev") != 0)
+    hook_arm64(so_find_addr("_Z25GetAndroidCurrentLanguagev"), (uintptr_t)GetAndroidCurrentLanguage);
+  if (so_find_addr("_Z25SetAndroidCurrentLanguagei") != 0)
+    hook_arm64(so_find_addr("_Z25SetAndroidCurrentLanguagei"), (uintptr_t)SetAndroidCurrentLanguage);
 
-  hook_arm64(so_find_addr("_Z14AND_DeviceTypev"), (uintptr_t)AND_DeviceType);
-  hook_arm64(so_find_addr("_Z16AND_DeviceLocalev"), (uintptr_t)AND_DeviceLocale);
-  hook_arm64(so_find_addr("_Z20AND_SystemInitializev"), (uintptr_t)AND_SystemInitialize);
-  hook_arm64(so_find_addr("_Z21AND_ScreenSetWakeLockb"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z22AND_FileGetArchiveName13OSFileArchive"), (uintptr_t)OS_FileGetArchiveName);
+  // Android device functions
+  if (so_find_addr("_Z14AND_DeviceTypev") != 0)
+    hook_arm64(so_find_addr("_Z14AND_DeviceTypev"), (uintptr_t)AND_DeviceType);
+  if (so_find_addr("_Z16AND_DeviceLocalev") != 0)
+    hook_arm64(so_find_addr("_Z16AND_DeviceLocalev"), (uintptr_t)AND_DeviceLocale);
+  if (so_find_addr("_Z20AND_SystemInitializev") != 0)
+    hook_arm64(so_find_addr("_Z20AND_SystemInitializev"), (uintptr_t)AND_SystemInitialize);
+  if (so_find_addr("_Z21AND_ScreenSetWakeLockb") != 0)
+    hook_arm64(so_find_addr("_Z21AND_ScreenSetWakeLockb"), (uintptr_t)ret0);
+  if (so_find_addr("_Z22AND_FileGetArchiveName13OSFileArchive") != 0)
+    hook_arm64(so_find_addr("_Z22AND_FileGetArchiveName13OSFileArchive"), (uintptr_t)OS_FileGetArchiveName);
 
-  hook_arm64(so_find_addr("_Z26ReadDataFromPrivateStoragePKcRPcRi"), (uintptr_t)ReadDataFromPrivateStorage);
-  hook_arm64(so_find_addr("_Z25WriteDataToPrivateStoragePKcS0_i"), (uintptr_t)WriteDataToPrivateStorage);
+  // Storage functions
+  if (so_find_addr("_Z26ReadDataFromPrivateStoragePKcRPcRi") != 0)
+    hook_arm64(so_find_addr("_Z26ReadDataFromPrivateStoragePKcRPcRi"), (uintptr_t)ReadDataFromPrivateStorage);
+  if (so_find_addr("_Z25WriteDataToPrivateStoragePKcS0_i") != 0)
+    hook_arm64(so_find_addr("_Z25WriteDataToPrivateStoragePKcS0_i"), (uintptr_t)WriteDataToPrivateStorage);
 
-  hook_arm64(so_find_addr("_Z25WarGamepad_GetGamepadTypei"), (uintptr_t)WarGamepad_GetGamepadType);
-  hook_arm64(so_find_addr("_Z28WarGamepad_GetGamepadButtonsi"), (uintptr_t)WarGamepad_GetGamepadButtons);
-  hook_arm64(so_find_addr("_Z25WarGamepad_GetGamepadAxisii"), (uintptr_t)WarGamepad_GetGamepadAxis);
+  // Hook gamepad functions - try WarGamepad first (if exists)
+  if (so_find_addr("_Z25WarGamepad_GetGamepadTypei") != 0)
+    hook_arm64(so_find_addr("_Z25WarGamepad_GetGamepadTypei"), (uintptr_t)WarGamepad_GetGamepadType);
+  if (so_find_addr("_Z28WarGamepad_GetGamepadButtonsi") != 0)
+    hook_arm64(so_find_addr("_Z28WarGamepad_GetGamepadButtonsi"), (uintptr_t)WarGamepad_GetGamepadButtons);
+  if (so_find_addr("_Z25WarGamepad_GetGamepadAxisii") != 0)
+    hook_arm64(so_find_addr("_Z25WarGamepad_GetGamepadAxisii"), (uintptr_t)WarGamepad_GetGamepadAxis);
+  
+  // Also try Bully-specific gamepad functions if they exist
+  // These might be JNI functions that need to be called differently
+  // For now, we'll hook them to our implementations if found
+  // TODO: Implement proper handlers for:
+  // - Java_com_rockstargames_oswrapper_GameNative_implOnGamepadButtonDown
+  // - Java_com_rockstargames_oswrapper_GameNative_implOnGamepadButtonUp
+  // - Java_com_rockstargames_oswrapper_GameNative_implOnGamepadAxesChanged
+  // - _Z16OS_GamepadButtonjj
+  // - _Z14OS_GamepadAxisjj
 
   // no vibration of any kind
-  hook_arm64(so_find_addr("_Z12VibratePhonei"), (uintptr_t)ret0);
-  hook_arm64(so_find_addr("_Z14Mobile_Vibratei"), (uintptr_t)ret0);
+  if (so_find_addr("_Z12VibratePhonei") != 0)
+    hook_arm64(so_find_addr("_Z12VibratePhonei"), (uintptr_t)ret0);
+  if (so_find_addr("_Z14Mobile_Vibratei") != 0)
+    hook_arm64(so_find_addr("_Z14Mobile_Vibratei"), (uintptr_t)ret0);
 
-  hook_arm64(so_find_addr("_Z15ExitAndroidGamev"), (uintptr_t)ExitAndroidGame);
+  if (so_find_addr("_Z15ExitAndroidGamev") != 0)
+    hook_arm64(so_find_addr("_Z15ExitAndroidGamev"), (uintptr_t)ExitAndroidGame);
 
-  // hook detail level getters to our own settings
-  hook_arm64(so_find_addr("_ZN13X_DetailLevel19getCharacterShadowsEv"), (uintptr_t)X_DetailLevel_getCharacterShadows);
-  hook_arm64(so_find_addr("_ZN13X_DetailLevel34getDebrisProjectileLimitMultiplierEv"), (uintptr_t)X_DetailLevel_getDebrisProjectileLimitMultiplier);
-  hook_arm64(so_find_addr("_ZN13X_DetailLevel23getDecalLimitMultiplierEv"), (uintptr_t)X_DetailLevel_getDecalLimitMultiplier);
-  hook_arm64(so_find_addr("_ZN13X_DetailLevel13dropHighesLODEv"), (uintptr_t)X_DetailLevel_getDropHighestLOD);
+  // hook detail level getters to our own settings (only if they exist)
+  if (so_find_addr("_ZN13X_DetailLevel19getCharacterShadowsEv") != 0)
+    hook_arm64(so_find_addr("_ZN13X_DetailLevel19getCharacterShadowsEv"), (uintptr_t)X_DetailLevel_getCharacterShadows);
+  if (so_find_addr("_ZN13X_DetailLevel34getDebrisProjectileLimitMultiplierEv") != 0)
+    hook_arm64(so_find_addr("_ZN13X_DetailLevel34getDebrisProjectileLimitMultiplierEv"), (uintptr_t)X_DetailLevel_getDebrisProjectileLimitMultiplier);
+  if (so_find_addr("_ZN13X_DetailLevel23getDecalLimitMultiplierEv") != 0)
+    hook_arm64(so_find_addr("_ZN13X_DetailLevel23getDecalLimitMultiplierEv"), (uintptr_t)X_DetailLevel_getDecalLimitMultiplier);
+  if (so_find_addr("_ZN13X_DetailLevel13dropHighesLODEv") != 0)
+    hook_arm64(so_find_addr("_ZN13X_DetailLevel13dropHighesLODEv"), (uintptr_t)X_DetailLevel_getDropHighestLOD);
 
-  // force bloom to our config value
-  hook_arm64(so_find_addr("_Z8UseBloomv"), (uintptr_t)UseBloom);
+  // force bloom to our config value (only if it exists)
+  if (so_find_addr("_Z8UseBloomv") != 0)
+    hook_arm64(so_find_addr("_Z8UseBloomv"), (uintptr_t)UseBloom);
 
-  // dummy out the weapon menu arrow drawer if it's disabled
-  if (!config.show_weapon_menu)
-    hook_arm64(so_find_addr("_ZN12WeaponSwiper4DrawEv"), (uintptr_t)ret0);
-
-  // crouch toggle
-  if (config.crouch_toggle) {
-    sm_control = (void *)so_find_addr_rx("_ZN24MaxPayne_ConfiguredInput10sm_controlE");
-    MaxPayne_InputControl_getButton = (void *)so_find_addr_rx("_ZNK21MaxPayne_InputControl9getButtonEi");
-    hook_arm64(so_find_addr("_ZNK24MaxPayne_ConfiguredInput10readCrouchEv"), (uintptr_t)MaxPayne_ConfiguredInput_readCrouch);
-  }
+  // Removed MaxPayne-specific weapon menu and crouch toggle
+  // Bully uses different systems - adapt if needed
 
   // if mod file is enabled, hook into R_File::setFileSystemRoot to set the mod as the priority archive
   // before R_File::loadArchives is called
@@ -393,8 +433,11 @@ void patch_game(void) {
   // a static buffer to TPIDR_EL0 and let the game use that
   armSetTlsRw(fake_tls);
 
-  // vars used in AND_SystemInitialize
-  deviceChip = (int *)so_find_addr_rx("deviceChip");
-  deviceForm = (int *)so_find_addr_rx("deviceForm");
-  definedDevice = (int *)so_find_addr_rx("definedDevice");
+  // vars used in AND_SystemInitialize (only if they exist)
+  if (so_find_addr("deviceChip") != 0)
+    deviceChip = (int *)so_find_addr_rx("deviceChip");
+  if (so_find_addr("deviceForm") != 0)
+    deviceForm = (int *)so_find_addr_rx("deviceForm");
+  if (so_find_addr("definedDevice") != 0)
+    definedDevice = (int *)so_find_addr_rx("definedDevice");
 }

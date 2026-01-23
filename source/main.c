@@ -57,16 +57,8 @@ void __libnx_initheap(void) {
 
 static void check_data(void) {
   const char *files[] = {
-    "MaxPayneSoundsv2.msf",
-    "x_data.ras",
-    "x_english.ras",
-    "x_level1.ras",
-    "x_level2.ras",
-    "x_level3.ras",
     "data",
-    "es2",
-    // if this is missing, assets folder hasn't been merged in
-    "es2/DefaultPixel.txt",
+    // TODO: Add Bully-specific data files here after checking OBB/split_data_1.apk
     // mod file goes here
     "",
   };
@@ -145,13 +137,16 @@ int main(void) {
   // can't set it in the initializer because it's not constant
   stderr_fake = stderr;
 
-  strcpy((char *)so_find_addr("StorageRootBuffer"), ".");
-  *(uint8_t *)so_find_addr("IsAndroidPaused") = 0;
-  *(uint8_t *)so_find_addr("UseRGBA8") = 1; // RGB565 FBOs suck
+  // Set storage root path for Bully (replaces StorageRootBuffer from Max Payne)
+  strcpy((char *)so_find_addr("StorageRootPath"), ".");
+  // Optionally set base root path if needed
+  // strcpy((char *)so_find_addr("StorageBaseRootPath"), ".");
 
-  uint32_t (* initGraphics)(void) = (void *)so_find_addr_rx("_Z12initGraphicsv");
-  uint32_t (* ShowJoystick)(int show) = (void *)so_find_addr_rx("_Z12ShowJoystickb");
-  int (* NVEventAppMain)(int argc, char *argv[]) = (void *)so_find_addr_rx("_Z14NVEventAppMainiPPc");
+  // Try to find Bully entry points
+  void* (* MainThread)(void*) = (void *)so_find_addr_rx("_Z10MainThreadPv");
+  void (* AND_ThreadOnMain)(void) = (void *)so_find_addr_rx("_Z16AND_ThreadOnMainv");
+  void (* AND_GameStartupDone)(void) = (void *)so_find_addr_rx("_Z19AND_GameStartupDonev");
+  void (* implOnInitialSetup)(void) = (void *)so_find_addr_rx("Java_com_rockstargames_oswrapper_GameNative_implOnInitialSetup");
 
   so_finalize();
   so_flush_caches();
@@ -160,9 +155,33 @@ int main(void) {
 
   so_free_temp();
 
-  initGraphics();
-  ShowJoystick(0);
-  NVEventAppMain(0, NULL);
+  // Initialize Android thread on main thread
+  if (AND_ThreadOnMain) {
+    debugPrintf("Calling AND_ThreadOnMain()\n");
+    AND_ThreadOnMain();
+  }
+
+  // Try JNI initial setup first (if available)
+  if (implOnInitialSetup) {
+    debugPrintf("Calling implOnInitialSetup()\n");
+    implOnInitialSetup();
+  }
+
+  // Start main game thread
+  if (MainThread) {
+    debugPrintf("Starting MainThread()\n");
+    // MainThread might be blocking, so we call it directly
+    // If it blocks, we might need to run it in a separate thread
+    MainThread(NULL);
+  } else {
+    fatal_error("Could not find\nMainThread function.\nCheck your .so file.");
+  }
+
+  // Signal game startup done (if available)
+  if (AND_GameStartupDone) {
+    debugPrintf("Calling AND_GameStartupDone()\n");
+    AND_GameStartupDone();
+  }
 
   return 0;
 }
