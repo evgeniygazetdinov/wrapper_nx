@@ -1,0 +1,29 @@
+# Bully Nintendo Switch Wrapper Configuration File
+# This file is automatically created on first run if it doesn't exist
+# You can edit it to customize game settings
+
+# Screen resolution (-1 = auto, based on docked/undocked mode)
+# Auto mode: 1920x1080 (docked) or 1280x720 (undocked)
+screen_width -1
+screen_height -1
+
+# Graphics settings
+use_bloom 0
+trilinear_filter 1
+disable_mipmaps 0
+
+# Language (0 = English, 1-6 = other languages)
+language 0
+
+# Input settings (from Max Payne, may not apply to Bully)
+crouch_toggle 1
+show_weapon_menu 0
+
+# Detail level settings
+character_shadows 1
+drop_highest_lod 0
+decal_limit 0.5
+debris_limit 1.0
+
+# Mod file (leave empty if not using mods)
+mod_file 

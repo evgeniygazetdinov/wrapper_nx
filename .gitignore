@@ -3,3 +3,4 @@
 *.nro
 build/
 libGame.so
+bully/

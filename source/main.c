@@ -57,8 +57,19 @@ void __libnx_initheap(void) {
 
 static void check_data(void) {
   const char *files[] = {
-    "data",
-    // TODO: Add Bully-specific data files here after checking OBB/split_data_1.apk
+    // Main data directory (bullyorig folder from data_0.zip)
+    "bullyorig",
+    // Essential files in bullyorig root
+    "bullyorig/version.cfg",
+    "bullyorig/runtime.xml",
+    "bullyorig/memory.xml",
+    // Essential directories
+    "bullyorig/config",
+    "bullyorig/models",
+    "bullyorig/audio",
+    "bullyorig/data",
+    // Additional data from data_1.zip (bully folder)
+    "bully",
     // mod file goes here
     "",
   };
@@ -70,7 +81,7 @@ static void check_data(void) {
   // check if all the required files are present
   for (unsigned int i = 0; i < numfiles; ++i) {
     if (stat(files[i], &st) < 0) {
-      fatal_error("Could not find\n%s.\nCheck your data files.", files[i]);
+      fatal_error("Could not find\n%s.\nCheck your data files.\n\nExtract data_0.zip and data_1.zip from split_data_1.apk\ninto the game directory.", files[i]);
       break;
     }
   }
@@ -128,8 +139,10 @@ int main(void) {
   update_imports();
 
   so_relocate();
+  // Resolve imports first - this will handle InitializeCriticalSection and other Windows API functions
   so_resolve(dynlib_functions, dynlib_numfunctions, 1);
 
+  // Apply patches after imports are resolved
   patch_openal();
   patch_opengl();
   patch_game();

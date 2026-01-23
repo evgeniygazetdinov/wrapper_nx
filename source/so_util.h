@@ -32,6 +32,7 @@ int so_relocate(void);
 int so_resolve(DynLibFunction *funcs, int num_funcs, int taint_missing_imports);
 void so_execute_init_array(void);
 uintptr_t so_find_addr(const char *symbol);
+uintptr_t so_find_addr_safe(const char *symbol);  // Returns 0 if not found, doesn't call fatal_error
 uintptr_t so_find_addr_rx(const char *symbol);
 uintptr_t so_find_rel_addr(const char *symbol);
 DynLibFunction *so_find_import(DynLibFunction *funcs, int num_funcs, const char *name);

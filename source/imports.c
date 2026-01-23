@@ -276,6 +276,22 @@ DynLibFunction dynlib_functions[] = {
 
   { "sched_get_priority_min", (uintptr_t)&retm1 },
 
+  // Windows API functions (used by some libraries, e.g. OpenAL)
+  // Note: Some libraries might have typos, so we add both variants
+  { "InitializeCriticalSection", (uintptr_t)&ret0 },
+  { "InitalizeCriticalSection", (uintptr_t)&ret0 },  // Typo variant (if exists)
+  { "DeleteCriticalSection", (uintptr_t)&ret0 },
+  { "EnterCriticalSection", (uintptr_t)&ret0 },
+  { "LeaveCriticalSection", (uintptr_t)&ret0 },
+  { "TryEnterCriticalSection", (uintptr_t)&ret0 },
+  // Additional Windows API functions that might be needed
+  { "GetCurrentThreadId", (uintptr_t)&ret0 },
+  { "GetCurrentProcessId", (uintptr_t)&ret0 },
+  { "Sleep", (uintptr_t)&ret0 },
+  { "GetTickCount", (uintptr_t)&ret0 },
+  { "QueryPerformanceCounter", (uintptr_t)&ret0 },
+  { "QueryPerformanceFrequency", (uintptr_t)&ret0 },
+
   { "__android_log_print", (uintptr_t)__android_log_print },
 
   { "__errno", (uintptr_t)&__errno },

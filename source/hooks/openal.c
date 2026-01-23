@@ -38,8 +38,19 @@ ALCdevice *alcOpenDeviceHook(const char *name) {
 }
 
 void patch_openal(void) {
-  // used for openal
-  hook_arm64(so_find_addr("InitializeCriticalSection"), (uintptr_t)ret0);
+  // used for openal - Windows API critical section functions
+  // Try both correct spelling and typo variant
+  // Use so_find_addr_safe to avoid fatal_error if symbol doesn't exist
+  extern uintptr_t so_find_addr_safe(const char *symbol);
+  uintptr_t addr;
+  
+  addr = so_find_addr_safe("InitializeCriticalSection");
+  if (addr != 0)
+    hook_arm64(addr, (uintptr_t)ret0);
+  
+  addr = so_find_addr_safe("InitalizeCriticalSection");  // Typo variant
+  if (addr != 0)
+    hook_arm64(addr, (uintptr_t)ret0);
   // openal API
   hook_arm64(so_find_addr("alAuxiliaryEffectSlotf"), (uintptr_t)alAuxiliaryEffectSlotf);
   hook_arm64(so_find_addr("alAuxiliaryEffectSlotfv"), (uintptr_t)alAuxiliaryEffectSlotfv);
