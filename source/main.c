@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <libgen.h>
 #include <switch.h>
 
 #include "config.h"
@@ -75,13 +76,20 @@ static void check_data(void) {
   };
   struct stat st;
   unsigned int numfiles = (sizeof(files) / sizeof(*files)) - 1;
+  char cwd_buf[512];
+  if (getcwd(cwd_buf, sizeof(cwd_buf)) == NULL)
+    cwd_buf[0] = '\0';
   // if mod is enabled, also check for mod file
   if (config.mod_file[0])
     files[numfiles++] = config.mod_file;
   // check if all the required files are present
   for (unsigned int i = 0; i < numfiles; ++i) {
     if (stat(files[i], &st) < 0) {
-      fatal_error("Could not find\n%s.\nCheck your data files.\n\nExtract data_0.zip and data_1.zip from split_data_1.apk\ninto the game directory.", files[i]);
+      const char *cwd_str = cwd_buf[0] ? cwd_buf : "(getcwd failed)";
+      debugPrintf("[check_data] FAIL %s | cwd=%s\n", files[i], cwd_str);
+      fatal_error_with_cwd(cwd_str,
+        "Could not find: %s\n\nCheck your data files. Set data_path in config.txt to the directory containing bullyorig, or run the .nro from that directory.\n\nExtract data_0.zip and data_1.zip from split_data_1.apk into the game directory.",
+        files[i]);
       break;
     }
   }
@@ -115,12 +123,26 @@ static void set_screen_size(int w, int h) {
   debugPrintf("screen mode: %dx%d\n", screen_width, screen_height);
 }
 
-int main(void) {
-  // try to read the config file and create one with default values if it's missing
+int main(int argc, char **argv) {
+  /* Сначала перейти в каталог с .nro, чтобы читать config.txt оттуда (на Switch cwd часто родительский) */
+  if (argc > 0 && argv && argv[0] && argv[0][0]) {
+    char nro_dir[512];
+    strlcpy(nro_dir, argv[0], sizeof(nro_dir));
+    char *dir = dirname(nro_dir);
+    if (dir && dir[0] && chdir(dir) == 0) {
+      /* теперь cwd = каталог с .nro, config.txt и bullyorig должны быть здесь */
+    }
+  }
+
   if (read_config(CONFIG_NAME) < 0)
     write_config(CONFIG_NAME);
 
   check_syscalls();
+
+  if (config.data_path[0]) {
+    if (chdir(config.data_path) != 0)
+      fatal_error("Cannot chdir to data_path:\n%s\nCheck config.txt.", config.data_path);
+  }
   check_data();
 
   // calculate actual screen size

@@ -41,10 +41,56 @@ make
 
 ## 3. Запуск nxlink на ПК
 
-Путь к nxlink (если devkitPro установлен в стандартное место):
+**Команда «nxlink» не найдена?** — nxlink не из apt, а из devkitPro. Варианты:
 
-- Linux/macOS: `$DEVKITPRO/tools/bin/nxlink`
-- Или в PATH после настройки окружения devkitPro.
+### Вариант «только Docker» (сборка через docker_make.sh)
+
+nxlink есть внутри образа `devkitpro/devkita64`. Запуск из папки проекта:
+
+```bash
+cd /home/ev/my_code/wrapper_nx
+
+# По broadcast (Switch в той же сети):
+docker run --rm -it --network host \
+  -v "$(pwd):/project" -w /project \
+  devkitpro/devkita64 \
+  /opt/devkitpro/tools/bin/nxlink -s project.nro
+
+# С указанием IP Switch:
+docker run --rm -it --network host \
+  -v "$(pwd):/project" -w /project \
+  devkitpro/devkita64 \
+  /opt/devkitpro/tools/bin/nxlink -a 192.168.1.XXX -s project.nro
+```
+
+Подставьте свой IP вместо `192.168.1.XXX`. На Switch предварительно нажмите **Y** в Homebrew Menu (netloader).
+
+**Скрипт-обёртка в проекте:**
+
+```bash
+cd /home/ev/my_code/wrapper_nx
+chmod +x nxlink_debug.sh
+
+./nxlink_debug.sh              # поиск Switch по broadcast
+./nxlink_debug.sh 192.168.1.5  # с указанием IP Switch
+```
+
+### Вариант «devkitPro установлен в системе»
+
+Если ставили devkitPro локально (не только Docker):
+
+```bash
+# Полный путь:
+$DEVKITPRO/tools/bin/nxlink -s project.nro
+
+# Или добавьте в PATH и вызывайте nxlink:
+export PATH="$DEVKITPRO/tools/bin:$PATH"
+nxlink -s project.nro
+```
+
+Типичный путь при установке через pacman: `/opt/devkitpro/tools/bin/nxlink`.
+
+---
 
 ### Вариант A: консоль в той же подсети (broadcast)
 

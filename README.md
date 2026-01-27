@@ -60,8 +60,13 @@ docker pull devkitpro/devkitarm
 ```
 
 ```
-bash bash_rub.sh 
+bash docker_make.sh 
 ```
+
+debug with docker
+```docker run --rm -it --network host   -v "$(pwd):/project" -w /project   devkitpro/devkita64   /opt/devkitpro/tools/bin/nxlink -a YOUR SWITCH IP FROM WIFI -s project.nro
+```
+
 
 ### Credits
 

@@ -25,3 +25,9 @@ debris_limit 1.0
 
 # Mod file (leave empty if not using mods)
 mod_file 
+
+# Path to directory containing bullyorig/ and bully/ (optional)
+# If set, the app will chdir here before checking data files.
+# Use this if the working directory at launch is not the game folder.
+# Example: data_path sdmc:/switch/bully
+data_path sdmc:/switch/bully

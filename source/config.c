@@ -26,7 +26,8 @@
   CONFIG_VAR_INT(show_weapon_menu); \
   CONFIG_VAR_FLOAT(decal_limit); \
   CONFIG_VAR_FLOAT(debris_limit); \
-  CONFIG_VAR_STR(mod_file);
+  CONFIG_VAR_STR(mod_file); \
+  CONFIG_VAR_STR(data_path);
 
 Config config;
 
@@ -60,6 +61,7 @@ int read_config(const char *file) {
   config.show_weapon_menu = 0;
   config.decal_limit = 0.5f;
   config.debris_limit = 1.0f;
+  config.data_path[0] = '\0';
 
   FILE *f = fopen(file, "r");
   if (f == NULL)
