@@ -302,15 +302,24 @@ void patch_game(void) {
     hook_arm64(so_find_addr("_Z15OS_ThreadLaunchPFjPvES_jPKci16OSThreadPriority"), (uintptr_t)OS_ThreadLaunch);
 
   // used to check some flags (hook only if they exist)
-  if (so_find_addr("_Z20OS_ServiceAppCommandPKcS0_") != 0)
-    hook_arm64(so_find_addr("_Z20OS_ServiceAppCommandPKcS0_"), (uintptr_t)ret0);
-  if (so_find_addr("_Z23OS_ServiceAppCommandIntPKci") != 0)
-    hook_arm64(so_find_addr("_Z23OS_ServiceAppCommandIntPKci"), (uintptr_t)ret0);
+  // try both manglings: _Z20OS_... (standard) and _Z200S_... (alternate in some builds)
+  { uintptr_t a = so_find_addr_safe("_Z20OS_ServiceAppCommandPKcS0_");
+    if (!a) a = so_find_addr_safe("_Z200S_ServiceAppCommandPKcSO_");
+    if (a) hook_arm64(a, (uintptr_t)ret0);
+  }
+  { uintptr_t a = so_find_addr_safe("_Z23OS_ServiceAppCommandIntPKci");
+    if (!a) a = so_find_addr_safe("_Z200S_ServiceAppCommandIntPKci");
+    if (a) hook_arm64(a, (uintptr_t)ret0);
+  }
   // this is checked on startup
-  if (so_find_addr("_Z25OS_ServiceIsWifiAvailablev") != 0)
-    hook_arm64(so_find_addr("_Z25OS_ServiceIsWifiAvailablev"), (uintptr_t)ret0);
-  if (so_find_addr("_Z28OS_ServiceIsNetworkAvailablev") != 0)
-    hook_arm64(so_find_addr("_Z28OS_ServiceIsNetworkAvailablev"), (uintptr_t)ret0);
+  { uintptr_t a = so_find_addr_safe("_Z25OS_ServiceIsWifiAvailablev");
+    if (!a) a = so_find_addr_safe("_Z250S_ServiceIsWifiAvailiablev");
+    if (a) hook_arm64(a, (uintptr_t)ret0);
+  }
+  { uintptr_t a = so_find_addr_safe("_Z28OS_ServiceIsNetworkAvailablev");
+    if (!a) a = so_find_addr_safe("_Z280S_ServiceIsNetworkAvailablev");
+    if (a) hook_arm64(a, (uintptr_t)ret0);
+  }
   // don't bother opening links
   if (so_find_addr("_Z18OS_ServiceOpenLinkPKc") != 0)
     hook_arm64(so_find_addr("_Z18OS_ServiceOpenLinkPKc"), (uintptr_t)ret0);

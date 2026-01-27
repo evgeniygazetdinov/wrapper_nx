@@ -151,7 +151,11 @@ int main(void) {
   stderr_fake = stderr;
 
   // Set storage root path for Bully (replaces StorageRootBuffer from Max Payne)
-  strcpy((char *)so_find_addr("StorageRootPath"), ".");
+  // CRITICAL: мы пишем по этому адресу — без символа будет краш в strcpy
+  uintptr_t storage_root = so_find_addr_safe("StorageRootPath");
+  if (!storage_root)
+    fatal_error("StorageRootPath not found.\nCheck your .so file.");
+  strcpy((char *)storage_root, ".");
   // Optionally set base root path if needed
   // strcpy((char *)so_find_addr("StorageBaseRootPath"), ".");
 
