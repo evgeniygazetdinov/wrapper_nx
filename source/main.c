@@ -143,9 +143,13 @@ int main(void) {
   so_resolve(dynlib_functions, dynlib_numfunctions, 1);
 
   // Apply patches after imports are resolved
+  debugPrintf("[main] patch_openal\n");
   patch_openal();
+  debugPrintf("[main] patch_opengl\n");
   patch_opengl();
+  debugPrintf("[main] patch_game\n");
   patch_game();
+  debugPrintf("[main] patches done\n");
 
   // can't set it in the initializer because it's not constant
   stderr_fake = stderr;
@@ -156,15 +160,17 @@ int main(void) {
   if (!storage_root)
     fatal_error("StorageRootPath not found.\nCheck your .so file.");
   strcpy((char *)storage_root, ".");
-  // Optionally set base root path if needed
-  // strcpy((char *)so_find_addr("StorageBaseRootPath"), ".");
+  debugPrintf("[main] StorageRootPath ok\n");
 
   // Try to find Bully entry points
-  void* (* MainThread)(void*) = (void *)so_find_addr_rx("_Z10MainThreadPv");
-  void (* AND_ThreadOnMain)(void) = (void *)so_find_addr_rx("_Z16AND_ThreadOnMainv");
-  void (* AND_GameStartupDone)(void) = (void *)so_find_addr_rx("_Z19AND_GameStartupDonev");
-  void (* implOnInitialSetup)(void) = (void *)so_find_addr_rx("Java_com_rockstargames_oswrapper_GameNative_implOnInitialSetup");
+  void* (* MainThread)(void*) = (void *)so_find_addr_rx_safe("_Z10MainThreadPv");
+  void (* AND_ThreadOnMain)(void) = (void *)so_find_addr_rx_safe("_Z16AND_ThreadOnMainv");
+  void (* AND_GameStartupDone)(void) = (void *)so_find_addr_rx_safe("_Z19AND_GameStartupDonev");
+  void (* implOnInitialSetup)(void) = (void *)so_find_addr_rx_safe("Java_com_rockstargames_oswrapper_GameNative_implOnInitialSetup");
+  if (!MainThread)
+    fatal_error("MainThread not found.\nCheck your .so file.");
 
+  debugPrintf("[main] so_finalize\n");
   so_finalize();
   so_flush_caches();
 
