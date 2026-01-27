@@ -38,7 +38,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
-APP_TITLE	:=	Max Payne
+APP_TITLE	:=	Bully
 BUILD		:=	build
 SOURCES		:=	source source/hooks
 DATA		:=	data

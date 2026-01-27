@@ -12,7 +12,7 @@
 // should be enough for pretend purposes
 #define MEMORY_MB 512
 
-#define SO_NAME "libMaxPayne.so"
+#define SO_NAME "libGame.so"
 #define CONFIG_NAME "config.txt"
 #define LOG_NAME "debug.log"
 

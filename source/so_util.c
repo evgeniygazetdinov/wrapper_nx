@@ -327,6 +327,16 @@ uintptr_t so_find_addr(const char *symbol) {
   return 0;
 }
 
+// Safe version that returns 0 if symbol not found (doesn't call fatal_error)
+uintptr_t so_find_addr_safe(const char *symbol) {
+  for (int i = 0; i < num_syms; i++) {
+    char *name = dynstrtab + syms[i].st_name;
+    if (strcmp(name, symbol) == 0)
+      return (uintptr_t)text_base + syms[i].st_value;
+  }
+  return 0;
+}
+
 uintptr_t so_find_rel_addr(const char *symbol) {
   for (int i = 0; i < elf_hdr->e_shnum; i++) {
     char *sh_name = shstrtab + sec_hdr[i].sh_name;
