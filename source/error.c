@@ -40,3 +40,31 @@ void fatal_error(const char *fmt, ...) {
   consoleExit(NULL);
   exit(1);
 }
+
+void fatal_error_with_cwd(const char *cwd, const char *fmt, ...) {
+  PadState pad;
+  padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+  padInitializeDefault(&pad);
+
+  consoleInit(NULL);
+
+  printf("Current directory: %s\n\n", cwd ? cwd : "(unknown)");
+  consoleUpdate(NULL);
+
+  va_list list;
+  va_start(list, fmt);
+  vprintf(fmt, list);
+  va_end(list);
+
+  printf("\n\nPress A to exit.");
+  consoleUpdate(NULL);
+
+  while (appletMainLoop()) {
+    padUpdate(&pad);
+    const u64 keys = padGetButtonsDown(&pad);
+    if (keys & HidNpadButton_A) break;
+  }
+
+  consoleExit(NULL);
+  exit(1);
+}

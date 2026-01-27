@@ -11,4 +11,7 @@
 
 void fatal_error(const char *fmt, ...) __attribute__((noreturn));
 
+/* То же, но сначала отдельно печатает cwd (для экрана Switch, чтобы не терялось) */
+void fatal_error_with_cwd(const char *cwd, const char *fmt, ...) __attribute__((noreturn));
+
 #endif

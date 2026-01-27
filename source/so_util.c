@@ -370,6 +370,15 @@ uintptr_t so_find_addr_rx(const char *symbol) {
   return 0;
 }
 
+uintptr_t so_find_addr_rx_safe(const char *symbol) {
+  for (int i = 0; i < num_syms; i++) {
+    char *name = dynstrtab + syms[i].st_name;
+    if (strcmp(name, symbol) == 0)
+      return (uintptr_t)text_virtbase + syms[i].st_value;
+  }
+  return 0;
+}
+
 DynLibFunction *so_find_import(DynLibFunction *funcs, int num_funcs, const char *name) {
   for (int i = 0; i < num_funcs; ++i)
     if (!strcmp(funcs[i].symbol, name))

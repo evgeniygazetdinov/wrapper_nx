@@ -36,6 +36,7 @@ typedef struct {
   float decal_limit;
   float debris_limit;
   char mod_file[0x100];
+  char data_path[512];  /* путь к каталогу с bullyorig/bully; если не пусто — chdir сюда перед проверкой данных */
 } Config;
 
 extern Config config;
