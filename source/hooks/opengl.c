@@ -95,11 +95,16 @@ int NVEventEGLInit(void) {
 }
 
 void patch_opengl(void) {
-  // patch egl stuff
-  hook_arm64(so_find_addr("_Z14NVEventEGLInitv"), (uintptr_t)NVEventEGLInit);
-  hook_arm64(so_find_addr("_Z21NVEventEGLMakeCurrentv"), (uintptr_t)NVEventEGLMakeCurrent);
-  hook_arm64(so_find_addr("_Z23NVEventEGLUnmakeCurrentv"), (uintptr_t)NVEventEGLUnmakeCurrent);
-  hook_arm64(so_find_addr("_Z21NVEventEGLSwapBuffersv"), (uintptr_t)NVEventEGLSwapBuffers);
+  uintptr_t addr;
+  // patch egl stuff — use so_find_addr_safe (game may not import every symbol)
+  addr = so_find_addr_safe("_Z14NVEventEGLInitv");
+  if (addr) hook_arm64(addr, (uintptr_t)NVEventEGLInit);
+  addr = so_find_addr_safe("_Z21NVEventEGLMakeCurrentv");
+  if (addr) hook_arm64(addr, (uintptr_t)NVEventEGLMakeCurrent);
+  addr = so_find_addr_safe("_Z23NVEventEGLUnmakeCurrentv");
+  if (addr) hook_arm64(addr, (uintptr_t)NVEventEGLUnmakeCurrent);
+  addr = so_find_addr_safe("_Z21NVEventEGLSwapBuffersv");
+  if (addr) hook_arm64(addr, (uintptr_t)NVEventEGLSwapBuffers);
 }
 
 void deinit_opengl(void) {
