@@ -10,7 +10,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <libgen.h>
 #include <switch.h>
 
 #include "config.h"
@@ -59,20 +58,20 @@ void __libnx_initheap(void) {
 static void check_data(void) {
   const char *files[] = {
     // Main data directory (bullyorig folder from data_0.zip)
-    "bullyorig",
+    "bully/bullyorig",
     // Essential files in bullyorig root
-    "bullyorig/version.cfg",
-    "bullyorig/runtime.xml",
-    "bullyorig/memory.xml",
+    "bully/bullyorig/version.cfg",
+    "bully/bullyorig/runtime.xml",
+    "bully/bullyorig/memory.xml",
     // Essential directories
-    "bullyorig/config",
-    "bullyorig/models",
-    "bullyorig/audio",
-    "bullyorig/data",
+    "bully/bullyorig/config",
+    "bully/bullyorig/models",
+    "bully/bullyorig/audio",
+    "bully/bullyorig/data",
     // Additional data from data_1.zip (bully folder)
-    "bully",
+    "bully/bully",
     // mod file goes here
-    "",
+    // "",
   };
   struct stat st;
   unsigned int numfiles = (sizeof(files) / sizeof(*files)) - 1;
@@ -123,15 +122,49 @@ static void set_screen_size(int w, int h) {
   debugPrintf("screen mode: %dx%d\n", screen_width, screen_height);
 }
 
+/* Простая реализация dirname для Switch (devkitPro не имеет libgen) */
+static char *get_dirname(char *path) {
+  if (!path || !path[0]) return path;
+  char *last_slash = strrchr(path, '/');
+  if (last_slash) {
+    *last_slash = '\0';
+    /* Если остался только "/" или пусто, вернуть "/" */
+    if (path[0] == '\0') {
+      path[0] = '/';
+      path[1] = '\0';
+    }
+  } else {
+    /* Нет слэша — текущая директория */
+    path[0] = '.';
+    path[1] = '\0';
+  }
+  return path;
+}
+
 int main(int argc, char **argv) {
+  printf("new bully build\n");
+  /* Откуда запущен .nro (путь от загрузчика) */
+  if (argc > 0 && argv && argv[0] && argv[0][0]) {
+    debugPrintf("[main] nro launched from: %s\n", argv[0]);
+  } else {
+    debugPrintf("[main] nro launched from: (argv[0] not set)\n");
+  }
+
   /* Сначала перейти в каталог с .nro, чтобы читать config.txt оттуда (на Switch cwd часто родительский) */
   if (argc > 0 && argv && argv[0] && argv[0][0]) {
-    char nro_dir[512];
-    strlcpy(nro_dir, argv[0], sizeof(nro_dir));
-    char *dir = dirname(nro_dir);
+    char nro_path[512];
+    strlcpy(nro_path, argv[0], sizeof(nro_path));
+    char *dir = get_dirname(nro_path);
     if (dir && dir[0] && chdir(dir) == 0) {
+      debugPrintf("[main] chdir to nro dir: %s\n", dir);
       /* теперь cwd = каталог с .nro, config.txt и bullyorig должны быть здесь */
     }
+  }
+
+  {
+    char cwd_buf[512];
+    if (getcwd(cwd_buf, sizeof(cwd_buf)) != NULL)
+      debugPrintf("[main] current dir: %s\n", cwd_buf);
   }
 
   if (read_config(CONFIG_NAME) < 0)
@@ -151,9 +184,8 @@ int main(int argc, char **argv) {
   debugPrintf("heap size = %u KB\n", MEMORY_MB * 1024);
   debugPrintf(" lib base = %p\n", heap_so_base);
   debugPrintf("  lib max = %u KB\n", heap_so_limit / 1024);
-
   if (so_load(SO_NAME, heap_so_base, heap_so_limit) < 0)
-    fatal_error("Could not load\n%s.", SO_NAME);
+    fatal_error("Could not load \n%s", SO_NAME);
 
   // won't save without it
   mkdir("savegames", 0777);
@@ -194,12 +226,13 @@ int main(int argc, char **argv) {
 
   debugPrintf("[main] so_finalize\n");
   so_finalize();
+  debugPrintf("[main] after so_finalize\n");
   so_flush_caches();
-
+  debugPrintf("[main] after so_flush_caches\n");
   so_execute_init_array();
-
+  debugPrintf("[main] after so_execute_init_array\n");
   so_free_temp();
-
+  debugPrintf("[main] so_free_temp\n");
   // Initialize Android thread on main thread
   if (AND_ThreadOnMain) {
     debugPrintf("Calling AND_ThreadOnMain()\n");

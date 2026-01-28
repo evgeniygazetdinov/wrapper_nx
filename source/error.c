@@ -48,7 +48,7 @@ void fatal_error_with_cwd(const char *cwd, const char *fmt, ...) {
 
   consoleInit(NULL);
 
-  printf("Current directory: %s\n\n", cwd ? cwd : "(unknown)");
+  printf("Current directory: here%s\n\n", cwd ? cwd : "(unknown)");
   consoleUpdate(NULL);
 
   va_list list;

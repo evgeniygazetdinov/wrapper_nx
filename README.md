@@ -65,6 +65,9 @@ bash docker_make.sh
 
 debug with docker
 ```docker run --rm -it --network host   -v "$(pwd):/project" -w /project   devkitpro/devkita64   /opt/devkitpro/tools/bin/nxlink -a YOUR SWITCH IP FROM WIFI -s project.nro
+
+or 
+ docker run --rm -it --network host   -v "$(pwd):/project" -w /project   devkitpro/devkita64   /opt/devkitpro/tools/bin/nxlink -a 192.168.0.106 -s project.nro
 ```
 
 
@@ -77,10 +80,10 @@ debug with docker
 
 ### Legal
 
-This project has no direct affiliation with Take-Two Interactive Software, Inc., Rockstar Games, Inc. or Remedy Entertainment Oyj and/or the "Max Payne" brand. "Max Payne" is a Take-Two Interactive Software, Inc. brand. All Rights Reserved.
+This project is not directly related to Take-Two Interactive Software, Inc., Rockstar Games, Inc. or Rockstar Vancouver studios and/or the Bully brand. Bully is a brand of Take-Two Interactive Software, Inc. All rights reserved.
 
-No assets or program code from the original game or its Android port are included in this project. We do not condone piracy in any way, shape or form and encourage users to legally own the original game.
+This project does not use game resources or the program code of the original game or its mobile versions. We do not support piracy in any form and encourage users to purchase legal copies of the original game.
 
-The video game "Max Payne" is copyright © 2001 Remedy Entertainment Oyj and/or Take-Two Interactive Software, Inc. The Android version, "Max Payne Mobile", is copyright © 2012 Rockstar Games, Inc. and/or Take-Two Interactive Software, Inc. "Max Payne" and "Max Payne Mobile" are trademarks of their respective owners. All Rights Reserved.
+The video game "Bully" (Canis Canem Edit) is copyrighted © 2005-2006 by Rockstar Games, Inc. and/or Take-Two Interactive Software, Inc. All rights reserved. "Bully", "Canis Canem Edit", as well as related names and logos are trademarks of their copyright holders.
 
-Unless specified otherwise, the source code provided in this repository is licenced under the MIT License. Please see the accompanying LICENSE file.
+Unless otherwise specified, the source code in this repository is distributed under the MIT license. Details can be found in the attached LICENSE file.
