@@ -75,8 +75,11 @@ void hook_arm64(uintptr_t addr, uintptr_t dst) {
 }
 
 void so_flush_caches(void) {
+  debugPrintf("[main] armDCacheFlush\n");
   armDCacheFlush(load_virtbase, load_size);
+  debugPrintf("[main] after armDCacheFlush\n");
   armICacheInvalidate(load_virtbase, load_size);
+  debugPrintf("[main] armICacheInvalidate\n");
 }
 
 void so_free_temp(void) {
@@ -309,8 +312,16 @@ void so_execute_init_array(void) {
     if (strcmp(sh_name, ".init_array") == 0) {
       int (** init_array)() = (void *)((uintptr_t)text_virtbase + sec_hdr[i].sh_addr);
       for (int j = 0; j < sec_hdr[i].sh_size / 8; j++) {
+        if (j == 0) {
+          debugPrintf("[so_execute_init_array] SKIP init[0] = %p\n", init_array[j]);
+          continue;
+        }
         if (init_array[j] != 0)
+        debugPrintf("[so_execute_init_array] calling init[%d] = %p\n", j, init_array[j]);
+
           init_array[j]();
+          debugPrintf("[so_execute_init_array] done init[%d]\n", j);
+
       }
     }
   }

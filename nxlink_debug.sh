@@ -1,9 +1,7 @@
 #!/bin/bash
-# Запуск nxlink через Docker для приёма логов с Switch.
-# Использование:
-#   ./nxlink_debug.sh              — поиск Switch по broadcast
-#   ./nxlink_debug.sh 192.168.1.5  — указать IP Switch
-# Перед запуском: на Switch в Homebrew Menu нажмите Y (netloader).
+# Запуск nxlink: отправка .nro на Switch и приём логов.
+# Использование: ./nxlink_debug.sh 192.168.0.106  (или без IP — поиск по broadcast)
+# На Switch: в Homebrew Menu нажмите Y (netloader).
 
 cd "$(dirname "$0")"
 NRO="project.nro"
