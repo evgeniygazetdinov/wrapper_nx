@@ -235,22 +235,28 @@ int main(int argc, char **argv) {
   debugPrintf("[main] so_free_temp\n");
   // Initialize Android thread on main thread
   if (AND_ThreadOnMain) {
-    debugPrintf("Calling AND_ThreadOnMain()\n");
-    AND_ThreadOnMain();
+    debugPrintf("[main] before AND_ThreadOnMain()\n");
+    debugPrintf("[main] Skipping ThreadOnMain\n");
+    // AND_ThreadOnMain();
+    debugPrintf("[main] after AND_ThreadOnMain()\n");
   }
 
   // Try JNI initial setup first (if available)
   if (implOnInitialSetup) {
-    debugPrintf("Calling implOnInitialSetup()\n");
-    implOnInitialSetup();
+    debugPrintf("[main] before implOnInitialSetup()\n");
+    debugPrintf("[main] Skipping implOnInitialSetup\n");
+
+    // implOnInitialSetup();
+    debugPrintf("[main] after implOnInitialSetup()\n");
   }
 
   // Start main game thread
   if (MainThread) {
-    debugPrintf("Starting MainThread()\n");
+    debugPrintf("[main] before MainThread()\n");
     // MainThread might be blocking, so we call it directly
     // If it blocks, we might need to run it in a separate thread
     MainThread(NULL);
+    debugPrintf("[main] after MainThread()\n");
   } else {
     fatal_error("Could not find\nMainThread function.\nCheck your .so file.");
   }

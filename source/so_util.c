@@ -307,15 +307,14 @@ int so_resolve(DynLibFunction *funcs, int num_funcs, int taint_missing_imports) 
 }
 
 void so_execute_init_array(void) {
+  debugPrintf("skipping so_execute_init_array");
+  return;
   for (int i = 0; i < elf_hdr->e_shnum; i++) {
     char *sh_name = shstrtab + sec_hdr[i].sh_name;
     if (strcmp(sh_name, ".init_array") == 0) {
       int (** init_array)() = (void *)((uintptr_t)text_virtbase + sec_hdr[i].sh_addr);
       for (int j = 0; j < sec_hdr[i].sh_size / 8; j++) {
-        if (j == 0) {
-          debugPrintf("[so_execute_init_array] SKIP init[0] = %p\n", init_array[j]);
-          continue;
-        }
+
         if (init_array[j] != 0)
         debugPrintf("[so_execute_init_array] calling init[%d] = %p\n", j, init_array[j]);
 
