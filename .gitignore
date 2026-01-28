@@ -4,3 +4,5 @@
 build/
 libGame.so
 bully/
+libso.rep/
+bully_data
