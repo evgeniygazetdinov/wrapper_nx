@@ -18,6 +18,7 @@
 #include "so_util.h"
 #include "hooks.h"
 #include "imports.h"
+#include "mainthread_hooks.h"
 
 static void *heap_so_base = NULL;
 static size_t heap_so_limit = 0;
@@ -203,6 +204,17 @@ int main(int argc, char **argv) {
   patch_opengl();
   debugPrintf("[main] patch_game\n");
   patch_game();
+
+  /* Inline-хуки внутри MainThread: смещения из Ghidra (Image Base 0).
+   * mainthread_add_inline_hook — только лог "дошли сюда", оригинал не выполняется.
+   * mainthread_add_inline_hook_wrap — лог "вход" → выполнение оригинальной инструкции → лог "выход";
+   *   по отсутствию "выход" видно, что инструкция (или вызванная функция) упала. */
+  /* mainthread_add_inline_hook(0x00a6eda0, "MT entry"); */
+  /* mainthread_add_inline_hook(0x00a6ee7c, "MT after LoadRendererDetails/OSHaptic"); */
+  /* mainthread_add_inline_hook_wrap(0x00a6ee7c, "before BL SomeFunc", "after BL SomeFunc"); */
+  /* mainthread_add_inline_hook(0x00a6f040, "MT LAB_00a6f040"); */
+  mainthread_add_inline_hook(0x00a6f098, "MT LAB_00a6f098");
+
   debugPrintf("[main] patches done\n");
 
   // can't set it in the initializer because it's not constant

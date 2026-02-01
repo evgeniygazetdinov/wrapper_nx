@@ -36,6 +36,8 @@ uintptr_t so_find_addr_safe(const char *symbol);  // Returns 0 if not found, doe
 uintptr_t so_find_addr_rx(const char *symbol);
 uintptr_t so_find_addr_rx_safe(const char *symbol);  // Returns 0 if not found
 uintptr_t so_find_rel_addr(const char *symbol);
+uintptr_t so_get_load_virtbase(void);  // база загрузки .so (runtime), для сравнения в трамплине
+uintptr_t so_get_load_base(void);      // текущий буфер .so (до finalize — записываемый), для патча
 DynLibFunction *so_find_import(DynLibFunction *funcs, int num_funcs, const char *name);
 void so_finalize(void);
 int so_unload(void);

@@ -74,6 +74,15 @@ void hook_arm64(uintptr_t addr, uintptr_t dst) {
   *(uint64_t *)(hook + 2) = dst;
 }
 
+uintptr_t so_get_load_virtbase(void) {
+  return (uintptr_t)load_virtbase;
+}
+
+/* Текущий буфер с кодом .so (до so_finalize — записываемый). Inline-хуки должны патчить его, а не load_virtbase. */
+uintptr_t so_get_load_base(void) {
+  return (uintptr_t)load_base;
+}
+
 void so_flush_caches(void) {
   debugPrintf("[main] armDCacheFlush\n");
   armDCacheFlush(load_virtbase, load_size);
