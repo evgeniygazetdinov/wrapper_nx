@@ -18,6 +18,7 @@
 #include "so_util.h"
 #include "hooks.h"
 #include "imports.h"
+#include "mainthread_hooks.h"
 
 static void *heap_so_base = NULL;
 static size_t heap_so_limit = 0;
@@ -203,6 +204,17 @@ int main(int argc, char **argv) {
   patch_opengl();
   debugPrintf("[main] patch_game\n");
   patch_game();
+
+  /* Inline-хуки внутри MainThread: смещения из Ghidra (Image Base 0).
+   * mainthread_add_inline_hook — только лог "дошли сюда", оригинал не выполняется.
+   * mainthread_add_inline_hook_wrap — лог "вход" → выполнение оригинальной инструкции → лог "выход";
+   *   по отсутствию "выход" видно, что инструкция (или вызванная функция) упала. */
+  /* mainthread_add_inline_hook(0x00a6eda0, "MT entry"); */
+  /* mainthread_add_inline_hook(0x00a6ee7c, "MT after LoadRendererDetails/OSHaptic"); */
+  /* mainthread_add_inline_hook_wrap(0x00a6ee7c, "before BL SomeFunc", "after BL SomeFunc"); */
+  /* mainthread_add_inline_hook(0x00a6f040, "MT LAB_00a6f040"); */
+  mainthread_add_inline_hook(0x00a6f098, "MT LAB_00a6f098");
+
   debugPrintf("[main] patches done\n");
 
   // can't set it in the initializer because it's not constant
@@ -235,22 +247,28 @@ int main(int argc, char **argv) {
   debugPrintf("[main] so_free_temp\n");
   // Initialize Android thread on main thread
   if (AND_ThreadOnMain) {
-    debugPrintf("Calling AND_ThreadOnMain()\n");
-    AND_ThreadOnMain();
+    debugPrintf("[main] before AND_ThreadOnMain()\n");
+    debugPrintf("[main] Skipping ThreadOnMain\n");
+    // AND_ThreadOnMain();
+    debugPrintf("[main] after AND_ThreadOnMain()\n");
   }
 
   // Try JNI initial setup first (if available)
   if (implOnInitialSetup) {
-    debugPrintf("Calling implOnInitialSetup()\n");
-    implOnInitialSetup();
+    debugPrintf("[main] before implOnInitialSetup()\n");
+    debugPrintf("[main] Skipping implOnInitialSetup\n");
+
+    // implOnInitialSetup();
+    debugPrintf("[main] after implOnInitialSetup()\n");
   }
 
   // Start main game thread
   if (MainThread) {
-    debugPrintf("Starting MainThread()\n");
+    debugPrintf("[main] before MainThread()\n");
     // MainThread might be blocking, so we call it directly
     // If it blocks, we might need to run it in a separate thread
     MainThread(NULL);
+    debugPrintf("[main] after MainThread()\n");
   } else {
     fatal_error("Could not find\nMainThread function.\nCheck your .so file.");
   }
