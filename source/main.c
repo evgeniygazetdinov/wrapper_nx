@@ -209,12 +209,12 @@ int main(int argc, char **argv) {
    * mainthread_add_inline_hook — только лог "дошли сюда", оригинал не выполняется.
    * mainthread_add_inline_hook_wrap — лог "вход" → выполнение оригинальной инструкции → лог "выход";
    *   по отсутствию "выход" видно, что инструкция (или вызванная функция) упала. */
-  /* mainthread_add_inline_hook(0x00a6eda0, "MT entry"); */
+  /* Первая инструкция MainThread — по [MT] first insn видно, что вошли в функцию */
+  mainthread_add_inline_hook(0x00a6eda0, "MT first insn");
+  mainthread_add_inline_hook_wrap(0x00a6ede8, "before LoadRendererDetails", "after LoadRendererDetails");
   /* mainthread_add_inline_hook(0x00a6ee7c, "MT after LoadRendererDetails/OSHaptic"); */
-  /* mainthread_add_inline_hook_wrap(0x00a6ee7c, "before BL SomeFunc", "after BL SomeFunc"); */
   /* mainthread_add_inline_hook(0x00a6f040, "MT LAB_00a6f040"); */
-  mainthread_add_inline_hook(0x00a6f098, "MT LAB_00a6f098");
-
+  
   debugPrintf("[main] patches done\n");
 
   // can't set it in the initializer because it's not constant
@@ -266,7 +266,6 @@ int main(int argc, char **argv) {
   if (MainThread) {
     debugPrintf("[main] before MainThread()\n");
     // MainThread might be blocking, so we call it directly
-    // If it blocks, we might need to run it in a separate thread
     MainThread(NULL);
     debugPrintf("[main] after MainThread()\n");
   } else {

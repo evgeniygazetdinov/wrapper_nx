@@ -9,9 +9,12 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <switch.h>
 #include "config.h"
 #include "util.h"
 #include "so_util.h"
+
+#define PAGE_SIZE 0x1000
 
 #define MAINTHREAD_HOOKS_MAX 16
 #define MAINTHREAD_WRAP_MAX 8
@@ -168,7 +171,17 @@ void mainthread_add_inline_hook_wrap(uintptr_t offset, const char *msg_enter, co
   uint32_t orig_insn = *(uint32_t *)addr_w;
 
   int slot = s_num_wrap_hooks;
-  *s_wrap_insn_slots[slot] = orig_insn;
+  /* Слот инструкции в .text (RX); временно делаем страницу Rw для записи оригинальной инструкции */
+  {
+    uintptr_t slot_addr = (uintptr_t)s_wrap_insn_slots[slot];
+    uintptr_t page_addr = slot_addr & ~(uintptr_t)(PAGE_SIZE - 1);
+    Result rc = svcSetProcessMemoryPermission(envGetOwnProcessHandle(), page_addr, PAGE_SIZE, Perm_Rw);
+    if (R_SUCCEEDED(rc)) {
+      *s_wrap_insn_slots[slot] = orig_insn;
+      svcSetProcessMemoryPermission(envGetOwnProcessHandle(), page_addr, PAGE_SIZE, Perm_Rx);
+    }
+    /* при ошибке слот остаётся NOP — wrap всё равно установится, но выполнится NOP вместо оригинала */
+  }
   s_wrap_hooks[s_num_wrap_hooks].patch_addr = addr_v;
   s_wrap_hooks[s_num_wrap_hooks].msg_enter = msg_enter;
   s_wrap_hooks[s_num_wrap_hooks].msg_exit = msg_exit;
