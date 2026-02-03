@@ -69,6 +69,16 @@ debug with docker
 or 
  docker run --rm -it --network host   -v "$(pwd):/project" -w /project   devkitpro/devkita64   /opt/devkitpro/tools/bin/nxlink -a 192.168.0.106 -s project.nro
 ```
+develop runtime
+need install ftpd classic
+```
+./docker_make.sh
+
+SWITCH_IP=YOUR SWITCH IP ./deploy_to_switch.sh
+
+./nxlink_debug.sh
+
+```
 
 
 ### Credits
