@@ -22,7 +22,7 @@ NRO="project.nro"
 
 FTP_PORT="${SWITCH_FTP_PORT:-5000}"
 REMOTE_PATH="/switch/$(basename "$NRO")"
-
+SWITCH_IP="192.168.0.106"
 # Режим FTP: SWITCH_IP задан или первый аргумент "ftp" и второй — IP
 if [ "$1" = "ftp" ] && [ -n "$2" ]; then
   SWITCH_IP="$2"

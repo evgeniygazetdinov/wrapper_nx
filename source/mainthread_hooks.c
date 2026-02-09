@@ -171,6 +171,7 @@ void mainthread_add_inline_hook_wrap(uintptr_t offset, const char *msg_enter, co
   uint32_t orig_insn = *(uint32_t *)addr_w;
 
   int slot = s_num_wrap_hooks;
+
   /* Слот инструкции в .text (RX); временно делаем страницу Rw для записи оригинальной инструкции */
   {
     uintptr_t slot_addr = (uintptr_t)s_wrap_insn_slots[slot];
