@@ -260,10 +260,9 @@ int main(int argc, char **argv) {
   if (MainThread) {
     game_ensure_tls();  // TPIDR_EL0 мог сброситься в so_finalize/init_array — игра читает [tpidr+0x28] в начале MainThread
     uint32_t first_insn = *(const uint32_t *)MainThread;
-    uint64_t tramp_target = *(const uint64_t *)((const char *)MainThread + 8);
-    debugPrintf("[main] before MainThread() call at %p first_insn=0x%08x tramp_target=0x%lx\n",
-                (void *)MainThread, first_insn, (unsigned long)tramp_target);
-    /* long-form: LDR X17,#8 затем BR X17 → переход по tramp_target. Должен быть адрес mainthread_trampoline_asm. */
+    debugPrintf("[main] before MainThread() at %p first_insn=0x%08x (TLS set)\n",
+                (void *)MainThread, first_insn);
+    /* first_insn=0xd10283ff = оригинальный prologue (sub sp); краш в первых инструкциях MainThread. */
     // MainThread might be blocking, so we call it directly
     MainThread(NULL);
     debugPrintf("[main] after MainThread()\n");
