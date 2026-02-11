@@ -205,15 +205,20 @@ int main(int argc, char **argv) {
   debugPrintf("[main] patch_game\n");
   patch_game();
 
-  /* Inline-хуки внутри MainThread: смещения из Ghidra (Image Base 0).
-   * mainthread_add_inline_hook — только лог "дошли сюда", оригинал не выполняется.
-   * mainthread_add_inline_hook_wrap — лог "вход" → выполнение оригинальной инструкции → лог "выход";
-   *   по отсутствию "выход" видно, что инструкция (или вызванная функция) упала. */
-  /* Первая инструкция MainThread — по [MT] first insn видно, что вошли в функцию */
-  mainthread_add_inline_hook(0x00a6eda0, "MT first insn");
+  /* Inline-хуки внутри MainThread. Смещение первой инструкции берём из символа .so. */
+  {
+    uintptr_t base_v = so_get_load_virtbase();
+    uintptr_t mt_entry = so_find_addr_rx_safe("_Z10MainThreadPv");
+    debugPrintf("[main] MainThread symbol: addr=0x%lx base=0x%lx\n", (unsigned long)mt_entry, (unsigned long)base_v);
+    if (base_v && mt_entry >= base_v) {
+      uintptr_t off = mt_entry - base_v;
+      debugPrintf("[main] adding hook at offset 0x%lx (MT first insn)\n", (unsigned long)off);
+      mainthread_add_inline_hook(off, "MT first insn");
+    } else {
+      debugPrintf("[main] skip MT entry hook (symbol not found or bad base)\n");
+    }
+  }
   mainthread_add_inline_hook_wrap(0x00a6ede8, "before LoadRendererDetails", "after LoadRendererDetails");
-  /* mainthread_add_inline_hook(0x00a6ee7c, "MT after LoadRendererDetails/OSHaptic"); */
-  /* mainthread_add_inline_hook(0x00a6f040, "MT LAB_00a6f040"); */
   
   debugPrintf("[main] patches done\n");
 
@@ -264,7 +269,11 @@ int main(int argc, char **argv) {
 
   // Start main game thread
   if (MainThread) {
-    debugPrintf("[main] before MainThread()\n");
+    uint32_t first_insn = *(const uint32_t *)MainThread;
+    uint64_t tramp_target = *(const uint64_t *)((const char *)MainThread + 8);
+    debugPrintf("[main] before MainThread() call at %p first_insn=0x%08x tramp_target=0x%lx\n",
+                (void *)MainThread, first_insn, (unsigned long)tramp_target);
+    /* long-form: LDR X17,#8 затем BR X17 → переход по tramp_target. Должен быть адрес mainthread_trampoline_asm. */
     // MainThread might be blocking, so we call it directly
     MainThread(NULL);
     debugPrintf("[main] after MainThread()\n");

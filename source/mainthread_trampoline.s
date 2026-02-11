@@ -4,6 +4,8 @@
 .type mainthread_trampoline_asm, %function
 
 mainthread_trampoline_asm:
+  /* BTI c: разрешить косвенный BR сюда (на Switch при CFI может требоваться) */
+  bti  c
   /* Сохраняем x0-x18, x30 (lr). 20 * 8 = 160 байт, выравнивание 16 */
   sub  sp, sp, #160
   stp  x0,  x1,  [sp, #0]

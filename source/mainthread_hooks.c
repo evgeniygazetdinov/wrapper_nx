@@ -87,9 +87,10 @@ static void mainthread_log_registered_globals(void) {
   }
 }
 
-/* Вызывается из asm-трамплина: lr = адрес возврата (patch_addr + 4) */
+/* Вызывается из asm-трамплина: lr = адрес возврата (patch_addr + 4); при long-form патче (BR) lr от вызывающего — поиск по addr может не сойтись */
 void mainthread_log_trampoline_c(uintptr_t lr) {
   uintptr_t patch_addr = lr - 4u;
+  debugPrintf("[MT] trampoline lr=0x%lx patch_addr=0x%lx\n", (unsigned long)lr, (unsigned long)patch_addr);
   for (int i = 0; i < s_num_hooks; i++) {
     if (s_hooks[i].addr == patch_addr) {
       debugPrintf("[MT] %s (addr 0x%lx)\n", s_hooks[i].msg, (unsigned long)patch_addr);
@@ -151,6 +152,7 @@ void mainthread_add_inline_hook(uintptr_t offset, const char *msg) {
     uint32_t bl = 0x94000000u | ((uint32_t)(rel >> 2) & 0x03FFFFFFu);
     *(uint32_t *)addr_w = bl;
   } else {
+    /* Дальше ±128MB — long form (BR). В трамплине lr будет от вызывающего, не patch+4 — ищем по patch_addr вручную не получится; лог всё равно покажет trampoline lr=... */
     uint32_t *patch = (uint32_t *)addr_w;
     patch[0] = 0x58000051u;
     patch[1] = 0xd61f0220u;
