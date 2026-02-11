@@ -205,19 +205,8 @@ int main(int argc, char **argv) {
   debugPrintf("[main] patch_game\n");
   patch_game();
 
-  /* Inline-хуки внутри MainThread. Смещение первой инструкции берём из символа .so. */
-  {
-    uintptr_t base_v = so_get_load_virtbase();
-    uintptr_t mt_entry = so_find_addr_rx_safe("_Z10MainThreadPv");
-    debugPrintf("[main] MainThread symbol: addr=0x%lx base=0x%lx\n", (unsigned long)mt_entry, (unsigned long)base_v);
-    if (base_v && mt_entry >= base_v) {
-      uintptr_t off = mt_entry - base_v;
-      debugPrintf("[main] adding hook at offset 0x%lx (MT first insn)\n", (unsigned long)off);
-      mainthread_add_inline_hook(off, "MT first insn");
-    } else {
-      debugPrintf("[main] skip MT entry hook (symbol not found or bad base)\n");
-    }
-  }
+  /* Хук на первую инструкцию MainThread отключён: переход из .so в NRO-трамплин падает. Смотрим, дойдёт ли до wrap без него. */
+  /* mainthread_add_inline_hook(mt_entry - base_v, "MT first insn"); */
   mainthread_add_inline_hook_wrap(0x00a6ede8, "before LoadRendererDetails", "after LoadRendererDetails");
   
   debugPrintf("[main] patches done\n");
@@ -269,6 +258,7 @@ int main(int argc, char **argv) {
 
   // Start main game thread
   if (MainThread) {
+    game_ensure_tls();  // TPIDR_EL0 мог сброситься в so_finalize/init_array — игра читает [tpidr+0x28] в начале MainThread
     uint32_t first_insn = *(const uint32_t *)MainThread;
     uint64_t tramp_target = *(const uint64_t *)((const char *)MainThread + 8);
     debugPrintf("[main] before MainThread() call at %p first_insn=0x%08x tramp_target=0x%lx\n",
