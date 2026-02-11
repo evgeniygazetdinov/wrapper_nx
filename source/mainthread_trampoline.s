@@ -4,6 +4,8 @@
 .type mainthread_trampoline_asm, %function
 
 mainthread_trampoline_asm:
+  /* BTI c (0xd503241f): разрешить косвенный BR сюда; без этого переход из .so в NRO может падать */
+  .inst 0xd503241f
   /* Сохраняем x0-x18, x30 (lr). 20 * 8 = 160 байт, выравнивание 16 */
   sub  sp, sp, #160
   stp  x0,  x1,  [sp, #0]
@@ -44,6 +46,7 @@ mainthread_trampoline_asm:
   .global mainthread_wrap_stub_\n
   .type   mainthread_wrap_stub_\n, %function
 mainthread_wrap_stub_\n:
+  .inst 0xd503241f
   sub   sp, sp, #160
   stp   x0,  x1,  [sp, #0]
   stp   x2,  x3,  [sp, #16]

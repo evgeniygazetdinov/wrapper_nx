@@ -32,7 +32,8 @@ static int *definedDevice;
 
 static PadState pad;
 
-static uint8_t fake_tls[0x100];
+/* Буфер для TPIDR_EL0: игра в MainThread читает по смещению 0x28 (stack guard). Выравнивание 16 для 64-bit доступов. */
+static uint8_t fake_tls[0x100] __attribute__((aligned(16)));
 
 // Removed MaxPayne-specific input control structures
 // Bully uses different input system (JNI-based or LIB_Input functions)
@@ -502,4 +503,8 @@ void patch_game(void) {
     if (a) definedDevice = (int *)so_find_addr_rx("definedDevice");
   }
   debugPrintf("[patch_game] done\n");
+}
+
+void game_ensure_tls(void) {
+  armSetTlsRw(fake_tls);
 }

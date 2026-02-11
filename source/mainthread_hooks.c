@@ -8,6 +8,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <switch.h>
 #include "config.h"
@@ -15,6 +16,36 @@
 #include "so_util.h"
 
 #define PAGE_SIZE 0x1000
+
+/* Мост: страница в virtmem (как .so), в ней stub "LDR x16,#8; BR x16; .quad trampoline".
+ * Патч в .so переходит сюда, затем stub переходит в NRO-трамплин. Обходим возможный запрет BR из .so в NRO. */
+static uintptr_t s_bridge_virt = 0;
+static void *s_bridge_src = NULL;
+static VirtmemReservation *s_bridge_rv = NULL;
+
+static uintptr_t get_bridge_page_for_trampoline(uintptr_t trampoline_addr) {
+  if (s_bridge_virt != 0)
+    return s_bridge_virt;
+  virtmemLock();
+  void *v = virtmemFindCodeMemory(PAGE_SIZE, PAGE_SIZE);
+  if (v) s_bridge_rv = virtmemAddReservation(v, PAGE_SIZE);
+  virtmemUnlock();
+  if (!v || !s_bridge_rv) return 0;
+  s_bridge_virt = (uintptr_t)v;
+  s_bridge_src = malloc(PAGE_SIZE);
+  if (!s_bridge_src) return 0;
+  memset(s_bridge_src, 0, PAGE_SIZE);
+  /* Stub: LDR x16,#8; BR x16; .quad trampoline */
+  uint32_t *p = (uint32_t *)s_bridge_src;
+  p[0] = 0x58000050u;
+  p[1] = 0xd61f0220u;
+  *(uint64_t *)(p + 2) = trampoline_addr;
+  Result rc = svcMapProcessCodeMemory(envGetOwnProcessHandle(), (u64)s_bridge_virt, (u64)s_bridge_src, PAGE_SIZE);
+  if (R_FAILED(rc)) { s_bridge_virt = 0; return 0; }
+  rc = svcSetProcessMemoryPermission(envGetOwnProcessHandle(), (u64)s_bridge_virt, PAGE_SIZE, Perm_Rx);
+  if (R_FAILED(rc)) { s_bridge_virt = 0; return 0; }
+  return s_bridge_virt;
+}
 
 #define MAINTHREAD_HOOKS_MAX 16
 #define MAINTHREAD_WRAP_MAX 8
@@ -87,9 +118,10 @@ static void mainthread_log_registered_globals(void) {
   }
 }
 
-/* Вызывается из asm-трамплина: lr = адрес возврата (patch_addr + 4) */
+/* Вызывается из asm-трамплина: lr = адрес возврата (patch_addr + 4); при long-form патче (BR) lr от вызывающего — поиск по addr может не сойтись */
 void mainthread_log_trampoline_c(uintptr_t lr) {
   uintptr_t patch_addr = lr - 4u;
+  debugPrintf("[MT] trampoline lr=0x%lx patch_addr=0x%lx\n", (unsigned long)lr, (unsigned long)patch_addr);
   for (int i = 0; i < s_num_hooks; i++) {
     if (s_hooks[i].addr == patch_addr) {
       debugPrintf("[MT] %s (addr 0x%lx)\n", s_hooks[i].msg, (unsigned long)patch_addr);
@@ -151,10 +183,16 @@ void mainthread_add_inline_hook(uintptr_t offset, const char *msg) {
     uint32_t bl = 0x94000000u | ((uint32_t)(rel >> 2) & 0x03FFFFFFu);
     *(uint32_t *)addr_w = bl;
   } else {
+    /* Long form: BR в мост (virtmem), мост BR в NRO-трамплин — обход запрета перехода из .so в NRO */
+    uintptr_t target = get_bridge_page_for_trampoline((uintptr_t)mainthread_trampoline_asm);
+    if (target == 0)
+      target = (uintptr_t)mainthread_trampoline_asm;
+    else
+      debugPrintf("[mainthread_hooks] using bridge page at 0x%lx\n", (unsigned long)target);
     uint32_t *patch = (uint32_t *)addr_w;
     patch[0] = 0x58000051u;
     patch[1] = 0xd61f0220u;
-    *(uint64_t *)(patch + 2) = (uint64_t)(uintptr_t)mainthread_trampoline_asm;
+    *(uint64_t *)(patch + 2) = target;
   }
 }
 

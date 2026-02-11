@@ -81,6 +81,16 @@ SWITCH_IP=YOUR SWITCH IP ./deploy_to_switch.sh
 ```
 
 
+```
+common develop loop
+1. set changes
+2. run ./docker_make.sh
+3. on switch run homebrew menu +R
+4. upload changes with ./deploy_to_switch.sh
+5. run ./nxlink_debug.sh
+```
+
+
 ### Credits
 
 * TheOfficialFloW for the method and work on the PS Vita port;

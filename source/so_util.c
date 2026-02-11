@@ -316,7 +316,7 @@ int so_resolve(DynLibFunction *funcs, int num_funcs, int taint_missing_imports) 
 }
 
 void so_execute_init_array(void) {
-  debugPrintf("skipping so_execute_init_array");
+  debugPrintf("skipping so_execute_init_array\n");
   return;
   for (int i = 0; i < elf_hdr->e_shnum; i++) {
     char *sh_name = shstrtab + sec_hdr[i].sh_name;
