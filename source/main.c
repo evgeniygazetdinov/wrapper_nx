@@ -205,10 +205,8 @@ int main(int argc, char **argv) {
   debugPrintf("[main] patch_game\n");
   patch_game();
 
-  /* Хук на первую инструкцию MainThread отключён: переход из .so в NRO-трамплин падает. Смотрим, дойдёт ли до wrap без него. */
-  /* mainthread_add_inline_hook(mt_entry - base_v, "MT first insn"); */
   mainthread_add_inline_hook_wrap(0x00a6ede8, "before LoadRendererDetails", "after LoadRendererDetails");
-  
+
   debugPrintf("[main] patches done\n");
 
   // can't set it in the initializer because it's not constant
@@ -242,18 +240,15 @@ int main(int argc, char **argv) {
   // Initialize Android thread on main thread
   if (AND_ThreadOnMain) {
     debugPrintf("[main] before AND_ThreadOnMain()\n");
-    debugPrintf("[main] Skipping ThreadOnMain\n");
-    // AND_ThreadOnMain();
-    debugPrintf("[main] after AND_ThreadOnMain()\n");
+    // AND_ThreadOnMain();  /* крашит при вызове — отключаем */
+    debugPrintf("[main] after AND_ThreadOnMain() (skipped)\n");
   }
 
   // Try JNI initial setup first (if available)
   if (implOnInitialSetup) {
     debugPrintf("[main] before implOnInitialSetup()\n");
-    debugPrintf("[main] Skipping implOnInitialSetup\n");
-
-    // implOnInitialSetup();
-    debugPrintf("[main] after implOnInitialSetup()\n");
+    // implOnInitialSetup();  /* крашит при вызове — отключаем */
+    debugPrintf("[main] after implOnInitialSetup() (skipped)\n");
   }
 
   // Start main game thread
@@ -262,7 +257,6 @@ int main(int argc, char **argv) {
     uint32_t first_insn = *(const uint32_t *)MainThread;
     debugPrintf("[main] before MainThread() at %p first_insn=0x%08x (TLS set)\n",
                 (void *)MainThread, first_insn);
-    /* first_insn=0xd10283ff = оригинальный prologue (sub sp); краш в первых инструкциях MainThread. */
     // MainThread might be blocking, so we call it directly
     MainThread(NULL);
     debugPrintf("[main] after MainThread()\n");
