@@ -316,7 +316,8 @@ int so_resolve(DynLibFunction *funcs, int num_funcs, int taint_missing_imports) 
 }
 
 void so_execute_init_array(void) {
-  debugPrintf("skipping so_execute_init_array\n");
+  /* init[0] крашит при вызове (0x7adc8da124); отключаем весь массив, чтобы дойти до AND_ThreadOnMain/implOnInitialSetup/MainThread. */
+  debugPrintf("[main] skipping so_execute_init_array (init[0] crashes)\n");
   return;
   for (int i = 0; i < elf_hdr->e_shnum; i++) {
     char *sh_name = shstrtab + sec_hdr[i].sh_name;

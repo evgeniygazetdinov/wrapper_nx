@@ -20,4 +20,7 @@ void mainthread_register_global(uintptr_t offset, const char *name);
 /* Пустая функция для явного применения (кэши сбрасываются в so_flush_caches). */
 void mainthread_inline_hooks_apply(void);
 
+/* Обёрнуть каждые 16 байт пролога MainThread. entry_offset = (MainThread - load_virtbase), чтобы патч попал в нужный адрес при любом p_vaddr. */
+void mainthread_add_trace_prologue(uintptr_t entry_offset);
+
 #endif
